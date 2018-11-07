@@ -1,0 +1,52 @@
+/* package et imports */
+package fr.usmb.m1isc.compilation.examen;
+import java_cup.runtime.Symbol;
+import java_cup.runtime.Symbol;
+import fr.usmb.m1isc.compilation.examen.Arbre;
+import fr.usmb.m1isc.compilation.examen.Arbre.NodeType;
+// nom de la classe a generer
+//class SimpleParser;
+
+/* inclusion du code */
+
+action code {: 
+    // pour utilisation dans les actions (classe action)
+:};
+
+
+parser code {:
+:};
+
+ init with {:
+    //	initialisation du parser
+:};
+
+/* symboles terminaux */
+terminal DEBUT, FIN, GAUCHE, DROITE, TABULAR, FINLIGNE, ET;
+terminal ERROR;
+terminal Integer ENTIER;
+terminal String  COLS;
+
+/* non terminaux */
+non terminal Arbre tab, lignes, cols, col , debut, fin ;
+
+/* grammaire */
+
+tab	::=   debut:f lignes:l fin 	{: RESULT = new Arbre(NodeType.TABULAR, null, f, l); :} ;
+
+debut 	::= DEBUT GAUCHE TABULAR DROITE GAUCHE COLS:f DROITE {: RESULT = new Arbre(NodeType.COLS, f); :}  ;
+
+fin 	::= FIN GAUCHE TABULAR DROITE ;
+
+lignes  ::= cols:c FINLIGNE lignes:l	{: RESULT = new Arbre(NodeType.LIGNE, null, c, l); :}
+          |  
+          ;
+
+cols 	::= col:c ET cols:r		{: RESULT = new Arbre(NodeType.ET, null, c, r); :}
+		  | col:c				{: RESULT = c ; :}
+		  ;
+		  
+col 	::= ENTIER:i			{: RESULT = new Arbre(NodeType.ENTIER, i); :}
+		  | 
+		  ;
+		  
