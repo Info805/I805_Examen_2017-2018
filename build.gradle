@@ -8,13 +8,8 @@
 
 plugins {
     id 'java'
-    id 'eclipse'
-    id 'idea'
-}
-
-configurations {
-    cupGeneration
-    jflexGeneration
+    id "org.xbib.gradle.plugin.jflex" version "1.7.0"
+    id 'org.hvb.java-cup' version '0.1+'
 }
 
 // In this section you declare where to find the dependencies of your project
@@ -25,69 +20,42 @@ repositories {
 
 dependencies {
     // jflex : generation de l'analyseur lexical
-    jflexGeneration 'de.jflex:jflex:1.8.2'
+    // jflexGeneration 'de.jflex:jflex:1.8.2'
     // cup : generation de l'analyseur syntaxique
-    cupGeneration 'com.github.vbmacher:java-cup:11b-20160615-1'
+    // cupGeneration 'com.github.vbmacher:java-cup:11b-20160615-1'
     // on a aussi besoin du runtime CUP pour la compilation et l'execution
-    implementation 'com.github.vbmacher:java-cup-runtime:11b-20160615-1'
+    // implementation 'com.github.vbmacher:java-cup-runtime:11b-20160615-1'
 }
 
-// on reutilise la tache ant pour jflex
-task jflex (group: 'build') {
-    ext.source = fileTree ( 'src/main/jflex'){
-        include "**/*.jflex"
-        include "**/*.flex"
-    }
-    ext.destdir = file("src/main/generated-jflex")
-    ext.noback = 'true'
-    ext.verbose = 'on'
-    ext.encoding = 'UTF-8'
-
-    inputs.property('noback', jflex.noback)
-    inputs.property('encoding', jflex.encoding)
-    inputs.files(jflex.source)
-    outputs.dir(jflex.destdir)
-
-    ant.taskdef(name:'jflex', classpath:configurations.jflexGeneration.asPath,  classname:"jflex.anttask.JFlexTask")
-    doLast {
-        sourceSets.main.java.srcDir jflex.destdir
-        source.each { File f -> 
-            println "jflex source --> ${f}"
-            ant.jflex(file:f, destdir:destdir, nobak:noback, verbose:verbose, encoding:jflex.encoding)
+sourceSets {
+    main {
+        java {
+            //sourceCompatibility = 1.8
+            //targetCompatibility = 1.8
+            // srcDir 'src/main/java'
+        }
+        jflex {
+            // srcDir 'src/main/jflex'
+        }
+        cup {
+            // srcDir 'src/main/cup'
         }
     }
 }
 
-// on reutilise la tache ant pour cup
-task cup (group: 'build') {
-    ext.source = fileTree ('src/main/cup'){
-        include "**/*.cup"
-    }    
-    ext.destdir = file("src/main/generated-cup")
-    ext.force = 'true'
-    ext.dump = 'off'
-    ext.locations = 'false'
-       
-    inputs.property('locations', cup.locations)
-    inputs.files(cup.source)
-    outputs.dir(cup.destdir)
-    
-    ant.taskdef(name:'cup', classpath:configurations.cupGeneration.asPath,  classname:"java_cup.anttask.CUPTask")
-    doLast {
-        sourceSets.main.java.srcDir cup.destdir
-        source.each { File f -> 
-            println "cup source --> ${f}"
-            ant.cup(srcfile:f, destdir:destdir, force:force, dump:dump, locations:locations)
-        }
-    }
+jflex {
+    no_backup = true
+    verbose = true
+    encoding = 'UTF-8'
 }
 
-clean.doFirst {
-    delete jflex.destdir
-    delete cup.destdir        
+cup {
+    locations = false
+    time = false
+    dump = false
+    progress = false
+    debug = false
 }
-
-compileJava.dependsOn cup, jflex
 
 jar {
     from {
@@ -100,30 +68,12 @@ jar {
     }
 }
 
-task ide {
-    eclipseClasspath.dependsOn ide
-    ideaModule.dependsOn ide
-    doFirst {
-        mkdir jflex.destdir
-        mkdir cup.destdir
-    }
-}
+compileJava.options.encoding = 'UTF-8'
 
-// configuration des IDE
-idea {
-    module {
-        generatedSourceDirs += cup.destdir
-        generatedSourceDirs += jflex.destdir
-    }
-}
+build.mustRunAfter clean
 
-sourceSets {
-    main {
-        java {
-            srcDir cup.destdir
-            srcDir jflex.destdir
-        }
-    }
+// on configure le plugin eclipse s'il est actif
+pluginManager.withPlugin('eclipse'){
+    // tasks to run when build automatically is enabled
+    eclipse.autoBuildTasks([tasks.named('generateCup'), tasks.named('generateJflex')])
 }
-
-task stage(dependsOn: 'build')
